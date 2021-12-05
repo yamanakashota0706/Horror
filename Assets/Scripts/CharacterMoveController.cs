@@ -8,11 +8,14 @@ public class CharacterMoveController : MonoBehaviour
     private Vector3 playerVelocity;
     private bool groundedPlayer = true;
     public float playerSpeed = 2.0f;
-    //public float jumpPower = 1.0f;
+    public float jumpPower = 1.0f;
+    public float gravityValue = -9.81f;
 
     public Animator Animator;
 
-   
+    private Vector3 oldVelocity;
+
+    public FoodStepsSoundManager FoodStepsSoundManager;
 
     // Update is called once per frame
     void Update()
@@ -31,7 +34,7 @@ public class CharacterMoveController : MonoBehaviour
 
         CharacterController.Move(move * Time.deltaTime * playerSpeed);
 
-        if(move!=Vector3.zero)
+        if (move!=Vector3.zero)
         {
             gameObject.transform.forward = move;
         }
@@ -41,6 +44,28 @@ public class CharacterMoveController : MonoBehaviour
             playerVelocity.y += Time.deltaTime;
             CharacterController.SimpleMove(playerVelocity);
         }
+
+        if (movePower > 0)
+        {
+            FoodStepsSoundManager.PlayFootStepSE();
+
+        }
+        else
+        {
+            FoodStepsSoundManager.StopFootStepSE();
+        }
+
+        playerVelocity = move;
+
+        playerVelocity = Vector3.Slerp(oldVelocity, playerVelocity, playerSpeed * Time.deltaTime);
+       
+        oldVelocity = playerVelocity;
+        if(playerVelocity.magnitude>0f)
+        {
+            transform.LookAt(transform.position + playerVelocity);
+        }
+        playerVelocity.y += gravityValue * Time.deltaTime;
+        CharacterController.Move(playerVelocity * Time.deltaTime);
     }
 
 }
