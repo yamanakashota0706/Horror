@@ -17,6 +17,19 @@ public class CharacterMoveController : MonoBehaviour
 
     public FoodStepsSoundManager FoodStepsSoundManager;
 
+    public Camera mainCamera;
+
+    public float MaxStamina = 6f;
+
+    public float NowStamina = 0;
+
+    public bool Tired = false;
+
+    private void Start()
+    {
+        NowStamina = MaxStamina;
+    }
+
     // Update is called once per frame
     void Update()
     {
@@ -26,26 +39,40 @@ public class CharacterMoveController : MonoBehaviour
             playerVelocity.y = 0;
         }
 
+        if(NowStamina <= 0  && !Tired)
+        {
+            Tired = true;
+            Animator.SetBool("Tired", true);
+        }
+        if (Tired)
+        {
+            NowStamina += Time.deltaTime / 2;
+            if(NowStamina > MaxStamina)
+            {
+                Tired = false;
+                NowStamina = MaxStamina;
+                Animator.SetBool("Tired", false);
+            }
+            return;
+        }
+
         var move = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
 
         var movePower = Mathf.Abs(move.z) + Mathf.Abs(move.x);
 
-        Animator.SetFloat("MovePower",movePower);
-
-        CharacterController.Move(move * Time.deltaTime * playerSpeed);
-
-        if (move!=Vector3.zero)
-        {
-            gameObject.transform.forward = move;
+        if (Input.GetKey(KeyCode.X)){
+            playerSpeed = 3.5f;
+            NowStamina -= Time.deltaTime;
+        }
+        else{
+            playerSpeed = 2.0f;
+            if (NowStamina < MaxStamina)
+            {
+                NowStamina += Time.deltaTime;
+            } 
         }
 
-        if(Input.GetButtonDown("Jump")&& groundedPlayer)
-        {
-            playerVelocity.y += Time.deltaTime;
-            CharacterController.SimpleMove(playerVelocity);
-        }
-
-        if (movePower > 0)
+        if (move.magnitude > 0)
         {
             FoodStepsSoundManager.PlayFootStepSE();
 
@@ -55,8 +82,14 @@ public class CharacterMoveController : MonoBehaviour
             FoodStepsSoundManager.StopFootStepSE();
         }
 
+        Animator.SetFloat("MovePower", move.magnitude * playerSpeed);
+        
         playerVelocity = move;
 
+        var horizontalRotation = Quaternion.AngleAxis(mainCamera.transform.eulerAngles.y, Vector3.up);
+        
+        playerVelocity = horizontalRotation * move;
+       
         playerVelocity = Vector3.Slerp(oldVelocity, playerVelocity, playerSpeed * Time.deltaTime);
        
         oldVelocity = playerVelocity;
@@ -65,7 +98,7 @@ public class CharacterMoveController : MonoBehaviour
             transform.LookAt(transform.position + playerVelocity);
         }
         playerVelocity.y += gravityValue * Time.deltaTime;
-        CharacterController.Move(playerVelocity * Time.deltaTime);
+        CharacterController.Move(playerVelocity * Time.deltaTime * playerSpeed);
     }
 
 }
